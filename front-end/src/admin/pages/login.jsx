@@ -3,6 +3,7 @@ import Foto from "../assets/logo_putih.png";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService"; // ← import dari service
+import { showLoginSuccess, showLoginError } from "../../utils/sweetAlertLogin";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -21,10 +22,10 @@ const Login = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      alert("Berhasil login! 👍");
+      await showLoginSuccess();
       navigate("/admin/dashboardadmin");
     } catch (err) {
-      setError(err.message || "Terjadi kesalahan saat login");
+      await showLoginError(err.message);
     }
   };
 

@@ -15,6 +15,12 @@ import {
   updateOrangtua,
   deleteOrangtua,
 } from "../../services/customerService";
+import {
+  showDeleteConfirm,
+  showDeleteSuccess,
+  showUpdateSuccess,
+  showCrudError,
+} from "../../utils/sweetAlertCrud";
 
 const Tablecustomers = () => {
   const [data, setData] = useState([]);
@@ -43,8 +49,8 @@ const Tablecustomers = () => {
         }));
         setData(mappedData);
       } catch (err) {
-        console.error("Gagal memuat data orang tua:", err);
-        setError("Gagal memuat data. Silakan coba lagi.");
+        console.error("Gagal mengambil data orang tua:", error);
+        showCrudError("memuat data orang tua", error.message);
       } finally {
         setLoading(false);
       }
@@ -59,24 +65,21 @@ const Tablecustomers = () => {
   };
 
   const handleDelete = async (id_customer) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
+    const result = await showDeleteConfirm("orang tua ini");
+    if (!result.isConfirmed) return; // Jika dibatalkan
 
     try {
-      // Panggil API delete
       await deleteOrangtua(id_customer);
-
-      // Hapus dari state lokal
       setData((prev) =>
         prev.filter((item) => item.id_customer !== id_customer)
       );
-
-      alert("Data berhasil dihapus! ✅");
-      window.location.reload();
+      showDeleteSuccess("orang tua"); // ✅ Notifikasi sukses
     } catch (err) {
       console.error("Gagal menghapus data:", err);
-      alert("Gagal menghapus data: " + (err.message || "Terjadi kesalahan"));
+      showCrudError("menghapus", err.message); // ❌ Notifikasi error
     }
   };
+
   const handleModalClose = () => {
     setModalIsOpen(false);
     setSelectedCustomer(null);
@@ -86,7 +89,6 @@ const Tablecustomers = () => {
     if (!selectedCustomer) return;
 
     try {
-      // Siapkan payload sesuai struktur backend
       const payload = {
         nama_orangtua: selectedCustomer.nama,
         no_hp: selectedCustomer.no_hp,
@@ -95,10 +97,9 @@ const Tablecustomers = () => {
         wilayah: selectedCustomer.wilayah,
       };
 
-      // Panggil API update
       await updateOrangtua(selectedCustomer.id_customer, payload);
 
-      // Refresh data dari backend
+      // Refresh data
       const response = await getAllOrangtua();
       const mappedData = response.map((item) => ({
         id_customer: item.id_orangtua,
@@ -112,11 +113,11 @@ const Tablecustomers = () => {
       }));
       setData(mappedData);
 
-      alert("Data berhasil diperbarui! ✅");
+      showUpdateSuccess("orang tua"); // ✅ Notifikasi sukses
       handleModalClose();
     } catch (err) {
       console.error("Gagal update data:", err);
-      alert("Gagal memperbarui data: " + (err.message || "Terjadi kesalahan"));
+      showCrudError("memperbarui", err.message); // ❌ Notifikasi error
     }
   };
 

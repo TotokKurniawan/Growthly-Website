@@ -19,40 +19,36 @@ import {
   getArtikelList,
   deleteArtikel,
   updateArtikel,
-} from "../../services/articleService"; // Sesuaikan path
-// ---------------------------------------------
+} from "../../services/articleService";
+import {
+  showDeleteConfirm,
+  showDeleteSuccess,
+  showUpdateSuccess,
+  showCrudError,
+} from "../../utils/sweetAlertCrud";
 
 const Article = () => {
-  // --- State untuk data artikel dari API dan loading ---
-  const [data, setData] = useState([]); // Ganti nama state dari 'articles' ke 'data'
-  const [loading, setLoading] = useState(true); // State untuk loading data artikel
-  // -----------------------------------------------
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- State baru untuk statistik dan loading ---
   const [stats, setStats] = useState({ total_artikel: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
-  // -----------------------------------------------
 
-  // --- useEffect untuk mengambil statistik dari API ---
   useEffect(() => {
     const fetchStats = async () => {
       setStatsLoading(true);
       try {
-        // Karena apiClient mengembalikan data langsung, simpan ke variabel 'data'
         const response = await getArtikelStats();
-        console.log("Data statistik dari API:", response); // Untuk debugging
-
-        // Akses langsung 'response.stats.total_artikel'
         setStats({
           total_artikel: response?.stats?.total_artikel || 0,
         });
       } catch (error) {
-        console.error("Gagal mengambil statistik artikel:", error);
-        setStats({ total_artikel: 0 });
+        console.error("Gagal mengambil data artikel:", error);
+        showCrudError("memuat data artikel", error.message);
       } finally {
         setStatsLoading(false);
       }
@@ -60,63 +56,48 @@ const Article = () => {
 
     fetchStats();
   }, []);
-  // ----------------------------------------------------
 
-  // --- useEffect untuk mengambil data artikel dari API ---
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true); // Set loading saat mulai
+      setLoading(true);
       try {
-        // Panggil service untuk mendapatkan daftar artikel
         const response = await getArtikelList();
-        console.log("Data artikel dari API:", response); // Untuk debugging
-
-        // Transformasi data dari API ke format yang digunakan oleh tabel
-        // Respons API: [{ id_artikel, judul, isi, penulis, foto, created_at, ... }, ...]
         const transformedData = response.map((item) => ({
-          id: item.id_artikel, // Gunakan id_artikel dari API sebagai 'id'
+          id: item.id_artikel,
           judul: item.judul,
-          author: item.penulis, // Gunakan penulis dari API
-          lokasi: item.nama_posyandu || "–", // Sesuaikan dengan field API, fallback ke "–"
+          author: item.penulis,
+          lokasi: item.nama_posyandu || "–",
           tgl_penerbitan:
-            item.created_at || item.tanggal_terbit || new Date().toISOString(), // Sesuaikan dengan field API
+            item.created_at || item.tanggal_terbit || new Date().toISOString(),
           deskripsi: item.isi, // Gunakan isi dari API
           foto: item.foto
-            ? `http://localhost:5000/uploads/artikel/${item.foto}` // Sesuaikan BASE URL dan path folder
-            : "https://placehold.co/600x400/EEE/31343C?text=No+Image", // Fallback image
-          // Tambahkan field lain jika diperlukan
+            ? `http://localhost:5000/uploads/artikel/${item.foto}`
+            : "https://placehold.co/600x400/EEE/31343C?text=No+Image",
         }));
 
-        setData(transformedData); // Set data yang sudah ditransformasi
+        setData(transformedData);
       } catch (error) {
         console.error("Gagal mengambil data artikel:", error);
-        alert("Gagal mengambil data artikel. Cek koneksi atau server.");
-        setData([]); // Set ke array kosong jika error
+        showCrudError("memuat data artikel", error.message);
       } finally {
-        setLoading(false); // Matikan loading
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, []); // Dependency array kosong berarti hanya dijalankan sekali saat komponen mount
-  // ----------------------------------------------------
+  }, []);
 
-  // ... (fungsi-fungsi handle lainnya tetap sama, tapi gunakan 'data' dan 'setData') ...
   const handleUpdateArticle = async (updatedData, newFile) => {
     try {
-      // Sesuaikan payload dengan struktur backend
       const payload = {
         judul: updatedData.judul,
-        isi: updatedData.deskripsi, // karena di backend pakai 'isi'
+        isi: updatedData.deskripsi,
         penulis: updatedData.author,
-        nama_posyandu: updatedData.lokasi, // atau field lokasi sesuai model
-        // tanggal_terbit: updatedData.tgl_penerbitan, // aktifkan jika diperlukan
+        nama_posyandu: updatedData.lokasi,
       };
 
-      // Kirim ke backend
       await updateArtikel(currentArticle.id, payload, newFile);
 
-      // Update state lokal
       setData((prev) =>
         prev.map((article) =>
           article.id === currentArticle.id
@@ -135,11 +116,11 @@ const Article = () => {
         )
       );
 
-      alert("Artikel berhasil diperbarui!");
+      showUpdateSuccess("artikel");
       handleCloseModal();
     } catch (err) {
       console.error("Gagal memperbarui artikel:", err);
-      alert(err.message || "Gagal memperbarui artikel. Coba lagi.");
+      showCrudError("memperbarui artikel", err.message);
     }
   };
 
@@ -149,27 +130,23 @@ const Article = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus artikel ini?")) {
-      return;
-    }
+    const result = await showDeleteConfirm("artikel ini");
+    if (!result.isConfirmed) return;
 
     try {
-      // ✅ Hapus dari backend
       await deleteArtikel(id);
-
-      // ✅ Hapus dari state lokal (UI update langsung)
       setData((prevData) => prevData.filter((article) => article.id !== id));
 
-      // ✅ Opsional: refresh statistik agar angka "Total Artikel" juga berubah
+      // Refresh statistik
       const response = await getArtikelStats();
       setStats({
         total_artikel: response?.stats?.total_artikel || 0,
       });
 
-      alert("Artikel berhasil dihapus!");
+      showDeleteSuccess("artikel"); // ✅ Notifikasi sukses
     } catch (error) {
       console.error("Gagal menghapus artikel:", error);
-      alert(error.message || "Gagal menghapus artikel. Coba lagi.");
+      showCrudError("menghapus artikel", error.message); // ❌ Notifikasi error
     }
   };
 

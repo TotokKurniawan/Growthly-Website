@@ -1,11 +1,8 @@
-// src/pages/prediksi/Prediksi.jsx (atau path yang sesuai)
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { BrainCircuit, Check, ChevronsRight, Loader } from "lucide-react";
 
-// Komponen untuk hasil prediksi yang lebih visual
-// Fungsi ini dipanggil untuk menampilkan SweetAlert, bukan komponen React yang dirender
 const showPredictionResult = (prediction) => {
   let result = {
     title: "Hasil Tidak Diketahui",
@@ -373,7 +370,7 @@ const Prediksi = () => {
                     value={formData.tinggiBadan}
                     onChange={handleChange}
                     className="w-full p-4 border-2 border-white bg-white/70 rounded-xl focus:border-purple-300 focus:outline-none transition-all"
-                    placeholder="Contoh: 75.5"
+                    placeholder="Contoh: 75"
                     required
                     min="0" // Batasi nilai minimum
                   />

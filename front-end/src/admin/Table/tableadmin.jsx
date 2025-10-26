@@ -8,6 +8,12 @@ import {
   updateBalita,
   deleteBalita,
 } from "../../services/adminService";
+import {
+  showDeleteConfirm,
+  showDeleteSuccess,
+  showUpdateSuccess,
+  showCrudError,
+} from "../../utils/sweetAlertCrud";
 
 const Tableadmin = ({ searchQuery, roleFilter }) => {
   const [data, setData] = useState([]);
@@ -36,8 +42,8 @@ const Tableadmin = ({ searchQuery, roleFilter }) => {
         }));
         setData(transformedData);
       } catch (error) {
-        console.error("Gagal memuat data balita:", error);
-        alert("Gagal memuat data balita. Cek koneksi atau server.");
+        console.error("Gagal mengambil data balita:", error);
+        showCrudError("memuat data balita", error.message);
       } finally {
         setLoading(false);
       }
@@ -70,12 +76,10 @@ const Tableadmin = ({ searchQuery, roleFilter }) => {
         throw new Error("Field wajib tidak boleh kosong");
       }
 
-      // Hanya kirim field yang bisa diedit di sini
       const updatedData = {
         nama_balita: editBalita.nama_balita,
         tgl_lahir: editBalita.tanggal_lahir,
         jenis_kelamin: editBalita.jenis_kelamin === "Laki-laki" ? "L" : "P",
-        // ❌ Jangan kirim status_gizi
       };
 
       await updateBalita(editBalita.id_user, updatedData);
@@ -95,11 +99,10 @@ const Tableadmin = ({ searchQuery, roleFilter }) => {
       }));
       setData(transformed);
       setIsModalOpen(false);
-      alert("Data balita berhasil diperbarui!");
-      window.location.reload();
+      showUpdateSuccess("balita"); // ✅ Notifikasi sukses
     } catch (error) {
       console.error("Error update balita:", error);
-      alert("Gagal memperbarui data: " + (error.message || "Cek koneksi"));
+      showCrudError("memperbarui data balita", error.message);
     }
   };
 
@@ -110,16 +113,13 @@ const Tableadmin = ({ searchQuery, roleFilter }) => {
   };
 
   const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        "Yakin ingin menghapus data balita ini? Tindakan tidak bisa dibatalkan!"
-      )
-    ) {
-      return;
-    }
+    const result = await showDeleteConfirm("balita ini");
+    if (!result.isConfirmed) return;
 
     try {
       await deleteBalita(id);
+
+      // Refresh data
       const freshData = await getBalitaList();
       if (!Array.isArray(freshData)) throw new Error("Respons tidak valid");
 
@@ -129,14 +129,14 @@ const Tableadmin = ({ searchQuery, roleFilter }) => {
         nama_orangtua: item.Orangtua?.nama_orangtua || "–",
         tanggal_lahir: item.tgl_lahir,
         jenis_kelamin: item.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan",
-        status_gizi: item.PengukuranGizis?.[0]?.status_gizi || "–",
+        status_gizi:
+          item.PengukuranGizis?.[0]?.status_gizi?.toLowerCase() || "–",
       }));
       setData(transformed);
-      alert("Data balita berhasil dihapus!");
-      window.location.reload();
+      showDeleteSuccess("balita"); // ✅ Notifikasi sukses
     } catch (error) {
       console.error("Error delete balita:", error);
-      alert("Gagal menghapus data: " + (error.message || "Cek koneksi"));
+      showCrudError("menghapus data balita", error.message);
     }
   };
 

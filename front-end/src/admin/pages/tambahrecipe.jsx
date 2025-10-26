@@ -9,6 +9,7 @@ import {
   FaSave,
 } from "react-icons/fa";
 import { addRecipe } from "../../services/recipeService";
+import { showCreateSuccess, showCrudError } from "../../utils/sweetAlertCrud";
 
 const TambahRecipe = () => {
   const [food_name, setFoodName] = useState("");
@@ -67,16 +68,17 @@ const TambahRecipe = () => {
         file
       );
 
-      alert("Resep berhasil ditambahkan!");
+      // ✅ Ganti alert dengan SweetAlert sukses
+      await showCreateSuccess("resep");
       navigate("/admin/admin/recipeadmin");
     } catch (err) {
       console.error("Error:", err);
-      setError(err.message || "Gagal menambahkan resep. Silakan coba lagi.");
+      // ✅ Ganti alert error dengan SweetAlert error
+      showCrudError("menambahkan resep", err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
       <div className="max-w-4xl w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">

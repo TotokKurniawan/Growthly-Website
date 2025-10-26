@@ -16,6 +16,12 @@ import {
   updatePengukuran,
 } from "../../services/pengukuranService"; // Tambahkan import
 import EditPengukuranModal from "../pages/modal/editreport";
+import {
+  showDeleteConfirm,
+  showDeleteSuccess,
+  showUpdateSuccess,
+  showCrudError,
+} from "../../utils/sweetAlertCrud";
 
 const CustomTable = ({
   title,
@@ -39,24 +45,18 @@ const CustomTable = ({
 
   // Fungsi hapus via API
   const handleDelete = async (id_gizi) => {
-    if (
-      !window.confirm(
-        "Apakah Anda yakin ingin menghapus data pengukuran ini? Tindakan ini tidak bisa dibatalkan."
-      )
-    ) {
-      return;
-    }
+    const result = await showDeleteConfirm("data pengukuran ini");
+    if (!result.isConfirmed) return;
 
     try {
       await deletePengukuran(id_gizi);
       setData((prevData) =>
         prevData.filter((item) => item.id_gizi !== id_gizi)
       );
-      alert("Data pengukuran berhasil dihapus!");
-      window.location.reload();
+      showDeleteSuccess("data pengukuran");
     } catch (error) {
       console.error("Gagal menghapus data pengukuran:", error);
-      alert("Gagal menghapus data pengukuran. Silakan coba lagi.");
+      showCrudError("menghapus data pengukuran", error.message);
     }
   };
 
@@ -66,29 +66,23 @@ const CustomTable = ({
     setIsModalOpen(true);
   };
 
-  // Fungsi untuk menyimpan perubahan ke API dan update state lokal
   const handleUpdate = async (updatedData) => {
     if (!editPengukuran) return;
 
     try {
-      // Panggil API untuk update data
-      const response = await updatePengukuran(
-        editPengukuran.id_gizi,
-        updatedData
-      );
-      // Jika berhasil, perbarui state lokal di Tablereport melalui setData
+      await updatePengukuran(editPengukuran.id_gizi, updatedData);
       setData((prevData) =>
         prevData.map((item) =>
           item.id_gizi === editPengukuran.id_gizi
-            ? { ...item, ...updatedData, Balitum: editPengukuran.Balitum } // Jaga relasi Balitum
+            ? { ...item, ...updatedData, Balitum: editPengukuran.Balitum }
             : item
         )
       );
-      alert("Data pengukuran berhasil diperbarui!");
-      setIsModalOpen(false); // Tutup modal setelah berhasil
+      showUpdateSuccess("data pengukuran");
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Gagal memperbarui data pengukuran:", error);
-      alert("Gagal memperbarui data pengukuran. Silakan coba lagi.");
+      showCrudError("memperbarui data pengukuran", error.message);
     }
   };
 
@@ -352,7 +346,7 @@ const Tablereport = ({ searchQuery, statusFilter }) => {
         setData(transformedData);
       } catch (error) {
         console.error("Gagal mengambil data pengukuran:", error);
-        alert("Gagal mengambil data pengukuran. Cek koneksi atau server.");
+        showCrudError("memuat data pengukuran", error.message);
       } finally {
         setLoading(false);
       }

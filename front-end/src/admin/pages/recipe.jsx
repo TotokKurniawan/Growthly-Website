@@ -19,6 +19,12 @@ import {
   deleteRecipe,
   updateRecipe,
 } from "../../services/recipeService";
+import {
+  showDeleteConfirm,
+  showDeleteSuccess,
+  showUpdateSuccess,
+  showCrudError,
+} from "../../utils/sweetAlertCrud";
 
 const Recipe = () => {
   const [recipes, setRecipes] = useState([]); // ✅ bukan static
@@ -74,7 +80,8 @@ const Recipe = () => {
 
         setRecipes(transformed);
       } catch (err) {
-        console.error("Gagal memuat daftar resep:", err);
+        console.error("Gagal mengambil data makanan:", error);
+        showCrudError("memuat data makanan", error.message);
       } finally {
         setLoading(false);
       }
@@ -101,10 +108,8 @@ const Recipe = () => {
     fetchStats();
   }, []);
 
-  // Handlers
   const handleUpdateRecipe = async (updatedData, newFile) => {
     try {
-      // Gabungkan metadata ke dalam `isi` sebagai JSON string
       const isi = JSON.stringify({
         author: updatedData.author || "-",
         kalori: updatedData.kalori ? parseInt(updatedData.kalori, 10) : 0,
@@ -119,10 +124,8 @@ const Recipe = () => {
         isi: isi,
       };
 
-      // Kirim ke backend
       await updateRecipe(currentRecipe.id_recipe, payload, newFile);
 
-      // Update state lokal
       setRecipes((prev) =>
         prev.map((recipe) =>
           recipe.id_recipe === currentRecipe.id_recipe
@@ -143,13 +146,14 @@ const Recipe = () => {
         )
       );
 
-      alert("Resep berhasil diperbarui!");
+      showUpdateSuccess("resep"); // ✅ Notifikasi sukses
       handleCloseModal();
     } catch (err) {
       console.error("Gagal memperbarui resep:", err);
-      alert(err.message || "Gagal memperbarui resep. Coba lagi.");
+      showCrudError("memperbarui resep", err.message); // ❌ Notifikasi error
     }
   };
+
   const handleEdit = (recipe) => {
     setCurrentRecipe(recipe);
     setShowModal(true);
@@ -161,19 +165,18 @@ const Recipe = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus resep ini?")) return;
+    const result = await showDeleteConfirm("resep ini");
+    if (!result.isConfirmed) return;
 
     try {
       await deleteRecipe(id);
-      // Hapus dari state lokal
       setRecipes((prev) => prev.filter((recipe) => recipe.id_recipe !== id));
-      alert("Resep berhasil dihapus!");
+      showDeleteSuccess("resep"); // ✅ Notifikasi sukses
     } catch (err) {
       console.error("Gagal menghapus resep:", err);
-      alert(err.message || "Gagal menghapus resep. Coba lagi.");
+      showCrudError("menghapus resep", err.message); // ❌ Notifikasi error
     }
   };
-
   // Filter berdasarkan pencarian
   const filteredRecipes = recipes.filter((recipe) =>
     [recipe.food_name, recipe.author, recipe.description].some((field) =>

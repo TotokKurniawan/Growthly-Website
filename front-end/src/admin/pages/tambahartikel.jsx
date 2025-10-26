@@ -12,7 +12,8 @@ import {
   FaArrowLeft,
   FaSave,
 } from "react-icons/fa";
-import { addArtikel } from "../../services/articleService"; // Import service
+import { addArtikel } from "../../services/articleService";
+import { showCreateSuccess, showCrudError } from "../../utils/sweetAlertCrud";
 
 const Tambahartikel = () => {
   const [formData, setFormData] = useState({
@@ -49,17 +50,15 @@ const Tambahartikel = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Set loading saat mulai
-    setError(null); // Reset error sebelumnya
+    setLoading(true);
+    setError(null);
 
-    // Validasi file
     if (!file) {
       setError("Gambar artikel wajib diupload.");
       setLoading(false);
       return;
     }
 
-    // Validasi form data
     if (
       !formData.judul ||
       !formData.author ||
@@ -72,33 +71,26 @@ const Tambahartikel = () => {
     }
 
     try {
-      // Buat objek FormData untuk mengirim data + file
       const formDataToSend = new FormData();
       formDataToSend.append("judul", formData.judul);
-      formDataToSend.append("isi", formData.deskripsi); // <-- Backend menggunakan 'isi'
-      formDataToSend.append("penulis", formData.author); // <-- Backend menggunakan 'penulis'
-      formDataToSend.append("foto", file); // Kirim file dengan key 'foto'
+      formDataToSend.append("isi", formData.deskripsi);
+      formDataToSend.append("penulis", formData.author);
+      formDataToSend.append("foto", file);
 
-      // Panggil service untuk menambah artikel
       const response = await addArtikel(formDataToSend);
 
-      // Tampilkan pesan sukses
-      alert(`Artikel "${response.artikel.judul}" berhasil ditambahkan! ✅`);
-
-      // === RELOAD HALAMAN SETELAH BERHASIL ===
-      navigate("/admin/admin/articleadmin");
+      // ✅ Ganti alert dengan SweetAlert sukses
+      await showCreateSuccess("artikel");
+      navigate("/admin/admin/articleadmin"); // Sesuaikan path jika perlu
     } catch (err) {
       console.error("Gagal menambahkan artikel:", err);
-      // Tangani error dari API
-      if (err.response?.data?.message) {
-        setError(`Gagal: ${err.response.data.message}`);
-      } else if (err.message) {
-        setError(`Error: ${err.message}`);
-      } else {
-        setError("Terjadi kesalahan saat menambahkan artikel.");
-      }
+      // ✅ Ganti setError/alert error dengan SweetAlert error
+      showCrudError(
+        "menambahkan artikel",
+        err.response?.data?.message || err.message
+      );
     } finally {
-      setLoading(false); // Matikan loading
+      setLoading(false);
     }
   };
 
